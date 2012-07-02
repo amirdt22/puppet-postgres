@@ -12,9 +12,6 @@
 #
 # [Remember: No empty lines between comments and class definition]
 class postgres($version = '8.4', $password = '') {
-  # Handle version specified in site.pp (or default to postgresql)
-  $postgres_client = "postgresql-client-${version}"
-  $postgres_server = "postgresql-${version}"
 
   case $operatingsystem {
     debian, ubuntu: {
@@ -23,9 +20,15 @@ class postgres($version = '8.4', $password = '') {
           version => $version;
       }
     }
+    centos, redhat: {
+      package {
+        ['postgresql-server', 'postgresql']:
+          ensure => installed,
+      }
+    }
     default: {
       package {
-        [$postgres_client, $postgres_server]:
+        ["postgresql-client-${version}", "postgresql-${version}"]:
           ensure => installed,
       }
     }
@@ -87,7 +90,7 @@ define postgres::config ($listen="localhost")  {
 }
 
 # Base SQL exec
-define sqlexec($username, $password, $database, $sql, $sqlcheck) {
+define sqlexec($username, $password='', $database, $sql, $sqlcheck) {
   if $password == "" {
     exec{ "psql -h localhost --username=${username} $database -c \"${sql}\" >> /var/lib/puppet/log/postgresql.sql.log 2>&1 && /bin/sleep 5":
       path        => $path,
