@@ -33,6 +33,12 @@ class postgres($version = '8.4', $password = '') {
       }
     }
   }
+
+  file { 'sqllogdir':
+    path   => '/var/lib/puppet/log/',
+    ensure => 'directory',
+  }
+
 }
 
 
@@ -96,7 +102,7 @@ define sqlexec($username, $password='', $database, $sql, $sqlcheck) {
       path        => $path,
       timeout     => 600,
       unless      => "psql -U $username $database -c $sqlcheck",
-      require     =>  [User['postgres'],Service[postgresql]],
+      require     =>  [User['postgres'],Service[postgresql],File['sqllogdir']],
     }
   } else {
     exec{ "psql -h localhost --username=${username} $database -c \"${sql}\" >> /var/lib/puppet/log/postgresql.sql.log 2>&1 && /bin/sleep 5":
@@ -104,7 +110,7 @@ define sqlexec($username, $password='', $database, $sql, $sqlcheck) {
       path        => $path,
       timeout     => 600,
       unless      => "psql -U $username $database -c $sqlcheck",
-      require     =>  [User['postgres'],Service[postgresql]],
+      require     =>  [User['postgres'],Service[postgresql],File['sqllogdir']],
     }
   }
 }
